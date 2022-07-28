@@ -103,11 +103,15 @@ def main(video, in_model, in_weights, out_weights):
             predicted_actions = IDMagent.predict_actions(frames)
             for i in range(FramesPerBatch):
                 frame = frames[i]
-                prediction = ''
+                prediction = '{'
                 for y, (action_name, action_array) in enumerate(predicted_actions.items()):
                     current_prediction = action_array[0, i]
                     prediction = prediction + '"' + action_name + '":'+ str(current_prediction) + ', '
-                # print(prediction)           # Test output 
+                    
+                prediction = prediction[:-2] # remove the excess ', '
+                prediction = prediction + '}' # add in the close bracket
+
+                print(prediction)           # Test output 
                 
                 agent_action = agent._env_action_to_agent(prediction, to_torch=True, check_if_null=True) # <- fails here
                 if agent_action is None:
