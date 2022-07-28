@@ -27,7 +27,7 @@ MAX_GRAD_NORM = 5.0
 
 MESSAGE = """
 This script will take a video, predict actions for its frames and
-then train a child to learn.)
+then train a child to learn.
 """
 
 # Matches a number in the MineRL Java code regarding sensitivity
@@ -113,7 +113,7 @@ def main(video, in_model, in_weights, out_weights):
 
                     # print(prediction)           # Test output 
                 
-                    agent_action = agent._env_action_to_agent(predicted_actions, to_torch=True, check_if_null=True) # <- fails here
+                    agent_action = agent._env_action_to_agent(action_array[0, i], to_torch=True, check_if_null=True) # <- fails here
                     if agent_action is None:
                         # Action was null
                         continue
