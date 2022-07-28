@@ -105,45 +105,45 @@ def main(video, in_model, in_weights, out_weights):
                 frame = frames[i]
                 prediction = '{'
                 for y, (action_name, action_array) in enumerate(predicted_actions.items()):
-                    current_prediction = action_array[0, i]
-                    prediction = prediction + '"' + action_name + '": '+ str(current_prediction) + ', '
+                    #current_prediction = action_array[0, i]
+                    # prediction = prediction + '"' + action_name + '": '+ str(current_prediction) + ', '
                     
-                prediction = prediction[:-2] # remove the excess ', '
-                prediction = prediction + '}' # add in the close bracket
+                    #  prediction = prediction[:-2] # remove the excess ', '
+                    #  prediction = prediction + '}' # add in the close bracket
 
-                print(prediction)           # Test output 
+                    # print(prediction)           # Test output 
                 
-                agent_action = agent._env_action_to_agent(prediction, to_torch=True, check_if_null=True) # <- fails here
-                if agent_action is None:
-                    # Action was null
-                    continue
+                    agent_action = agent._env_action_to_agent(predicted_actions, to_torch=True, check_if_null=True) # <- fails here
+                    if agent_action is None:
+                        # Action was null
+                        continue
 
-                agent_obs = agent._env_obs_to_agent({"pov": frame})
-                if episode_id not in episode_hidden_states:
-                    # TODO need to clean up this hidden state after worker is done with the work item.
-                    #      Leaks memory, but not tooooo much at these scales (will be a problem later).
-                    episode_hidden_states[episode_id] = policy.initial_state(1)
-                agent_state = episode_hidden_states[episode_id]
+                    agent_obs = agent._env_obs_to_agent({"pov": frame})
+                    if episode_id not in episode_hidden_states:
+                        # TODO need to clean up this hidden state after worker is done with the work item.
+                        #      Leaks memory, but not tooooo much at these scales (will be a problem later).
+                        episode_hidden_states[episode_id] = policy.initial_state(1)
+                    agent_state = episode_hidden_states[episode_id]
 
-                pi_distribution, v_prediction, new_agent_state = policy.get_output_for_observation(
-                    agent_obs,
-                    agent_state,
-                    dummy_first
-                )
+                    pi_distribution, v_prediction, new_agent_state = policy.get_output_for_observation(
+                        agent_obs,
+                        agent_state,
+                        dummy_first
+                    )
 
-                log_prob  = policy.get_logprob_of_action(pi_distribution, agent_action)
+                    log_prob  = policy.get_logprob_of_action(pi_distribution, agent_action)
 
-                # Make sure we do not try to backprop through sequence
-                # (fails with current accumulation)
-                new_agent_state = tree_map(lambda x: x.detach(), new_agent_state)
-                episode_hidden_states[episode_id] = new_agent_state
+                    # Make sure we do not try to backprop through sequence
+                    # (fails with current accumulation)
+                    new_agent_state = tree_map(lambda x: x.detach(), new_agent_state)
+                    episode_hidden_states[episode_id] = new_agent_state
 
-                # Finally, update the agent to increase the probability of the
-                # taken action.
-                # Remember to take mean over batch losses
-                loss = -log_prob / BATCH_SIZE
-                batch_loss += loss.item()
-                loss.backward()
+                    # Finally, update the agent to increase the probability of the
+                    # taken action.
+                    # Remember to take mean over batch losses
+                    loss = -log_prob / BATCH_SIZE
+                    batch_loss += loss.item()
+                    loss.backward()
             th.nn.utils.clip_grad_norm_(trainable_parameters, MAX_GRAD_NORM)
             optimizer.step()
             optimizer.zero_grad()
