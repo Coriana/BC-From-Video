@@ -106,7 +106,7 @@ def main(video, in_model, in_weights, out_weights):
                 prediction = '{'
                 for y, (action_name, action_array) in enumerate(predicted_actions.items()):
                     current_prediction = action_array[0, i]
-                    prediction = prediction + '"' + action_name + '":'+ str(current_prediction) + ', '
+                    prediction = prediction + '"' + action_name + '": '+ str(current_prediction) + ', '
                     
                 prediction = prediction[:-2] # remove the excess ', '
                 prediction = prediction + '}' # add in the close bracket
