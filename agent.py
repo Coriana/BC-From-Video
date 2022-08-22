@@ -4,10 +4,10 @@ import cv2
 from gym3.types import DictType
 from gym import spaces
 
-from openai_vpt.lib.action_mapping import CameraHierarchicalMapping
-from openai_vpt.lib.actions import ActionTransformer
-from openai_vpt.lib.policy import MinecraftAgentPolicy
-from openai_vpt.lib.torch_util import default_device_type, set_default_torch_device
+from lib.action_mapping import CameraHierarchicalMapping
+from lib.actions import ActionTransformer
+from lib.policy import MinecraftAgentPolicy
+from lib.torch_util import default_device_type, set_default_torch_device
 
 
 # Hardcoded settings
@@ -72,11 +72,29 @@ TARGET_ACTION_SPACE = {
     "inventory": spaces.Discrete(2),
     "jump": spaces.Discrete(2),
     "left": spaces.Discrete(2),
+    "pickItem": spaces.Discrete(2),
     "right": spaces.Discrete(2),
     "sneak": spaces.Discrete(2),
     "sprint": spaces.Discrete(2),
+    "swapHands": spaces.Discrete(2),
     "use": spaces.Discrete(2)
 }
+
+
+def validate_env(env):
+    """Check that the MineRL environment is setup correctly, and raise if not"""
+    for key, value in ENV_KWARGS.items():
+        if key == "frameskip":
+            continue
+        if getattr(env.task, key) != value:
+            raise ValueError(f"MineRL environment setting {key} does not match {value}")
+    action_names = set(env.action_space.spaces.keys())
+    if action_names != set(TARGET_ACTION_SPACE.keys()):
+        raise ValueError(f"MineRL action space does match. Expected actions {set(TARGET_ACTION_SPACE.keys())}")
+
+    for ac_space_name, ac_space_space in TARGET_ACTION_SPACE.items():
+        if env.action_space.spaces[ac_space_name] != ac_space_space:
+            raise ValueError(f"MineRL action space setting {ac_space_name} does not match {ac_space_space}")
 
 
 def resize_image(img, target_resolution):
@@ -87,6 +105,7 @@ def resize_image(img, target_resolution):
 
 class MineRLAgent:
     def __init__(self, device=None, policy_kwargs=None, pi_head_kwargs=None):
+
         if device is None:
             device = default_device_type()
         self.device = th.device(device)

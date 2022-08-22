@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 import numpy as np
 import torch
 
-from openai_vpt.lib.action_head import (CategoricalActionHead, DiagGaussianActionHead,
+from lib.action_head import (CategoricalActionHead, DiagGaussianActionHead,
                              DictActionHead)
 
 

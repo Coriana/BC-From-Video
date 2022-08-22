@@ -1,7 +1,7 @@
 import attr
 import numpy as np
 
-from openai_vpt.lib.minecraft_util import store_args
+from lib.minecraft_util import store_args
 
 
 class Buttons:
@@ -118,7 +118,9 @@ class ActionTransformer:
             quantization_scheme=camera_quantization_scheme,
             mu=camera_mu,
         )
-        self.camera_zero_bin = self.camera_maxval // self.camera_binsize
+
+    def camera_zero_bin(self):
+        return self.camera_maxval // self.camera_binsize
 
     def discretize_camera(self, xy):
         return self.quantizer.discretize(xy)

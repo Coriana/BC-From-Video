@@ -165,7 +165,6 @@ def data_loader_worker(tasks_queue, output_queue, quit_workers_event):
         # not captured by the recorder.
         # Work around this by keeping track of selected hotbar item
         # and updating "hotbar.#" actions when hotbar selection changes.
-        last_hotbar = 0
 
         with open(json_path) as json_file:
             print("pre-processing: " + json_path)
@@ -191,11 +190,6 @@ def data_loader_worker(tasks_queue, output_queue, quit_workers_event):
 
             action, is_null_action = json_action_to_env_action(step_data)
 
-            # Update hotbar selection
-            current_hotbar = step_data["hotbar"]
-            if current_hotbar != last_hotbar:
-                action["hotbar.{}".format(current_hotbar + 1)] = 1
-            last_hotbar = current_hotbar
 
             # Read frame even if this is null so we progress forward
             ret, frame = video.read()
@@ -212,7 +206,7 @@ def data_loader_worker(tasks_queue, output_queue, quit_workers_event):
                     composite_images_with_alpha(frame, cursor_image, cursor_alpha, cursor_x, cursor_y)
                 cv2.cvtColor(frame, code=cv2.COLOR_BGR2RGB, dst=frame)
                 frame = np.asarray(np.clip(frame, 0, 255), dtype=np.uint8)
-                frame = resize_image(frame, AGENT_RESOLUTION)
+                # frame = resize_image(frame, AGENT_RESOLUTION)
                 output_queue.put((trajectory_id, frame, action), timeout=QUEUE_TIMEOUT)
             else:
                 print(f"Could not read frame from video {video_path}")
@@ -248,13 +242,13 @@ class DataLoader:
         self.n_epochs = n_epochs
         self.batch_size = batch_size
         self.max_queue_size = max_queue_size
-        unique_ids = glob.glob(os.path.join(dataset_dir, "*.mp4"))
+        unique_ids = glob.glob(os.path.join(dataset_dir, "*.avi"))
         unique_ids = list(set([os.path.basename(x).split(".")[0] for x in unique_ids]))
         self.unique_ids = unique_ids
         # Create tuples of (video_path, json_path) for each unique_id
         demonstration_tuples = []
         for unique_id in unique_ids:
-            video_path = os.path.abspath(os.path.join(dataset_dir, unique_id + ".mp4"))
+            video_path = os.path.abspath(os.path.join(dataset_dir, unique_id + ".avi"))
             json_path = os.path.abspath(os.path.join(dataset_dir, unique_id + ".jsonl"))
             demonstration_tuples.append((video_path, json_path))
 

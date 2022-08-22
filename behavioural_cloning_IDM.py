@@ -14,7 +14,7 @@ import torch as th
 import numpy as np
 
 from agent import PI_HEAD_KWARGS, MineRLAgent
-from data_loader import DataLoader
+from data_loader_IDM import DataLoader
 from lib.tree_util import tree_map
 
 # Originally this code was designed for a small dataset of ~20 demonstrations per task.
@@ -22,14 +22,14 @@ from lib.tree_util import tree_map
 # Use this flag to switch between the two settings
 USING_FULL_DATASET = True
 
-EPOCHS = 2 if USING_FULL_DATASET else 48
+EPOCHS = 52 if USING_FULL_DATASET else 48
 # Needs to be <= number of videos
-BATCH_SIZE = 62 if USING_FULL_DATASET else 16
+BATCH_SIZE = 42 if USING_FULL_DATASET else 16
 # Ideally more than batch size to create
 # variation in datasets (otherwise, you will
 # get a bunch of consecutive samples)
 # Decrease this (and batch_size) if you run out of memory
-N_WORKERS = 100 if USING_FULL_DATASET else 20
+N_WORKERS = 62 if USING_FULL_DATASET else 20
 DEVICE = "cuda"
 
 LOSS_REPORT_RATE = 100
@@ -49,6 +49,7 @@ SAVE_BATCHES = 5000
 def load_model_parameters(path_to_model_file):
     agent_parameters = pickle.load(open(path_to_model_file, "rb"))
     policy_kwargs = agent_parameters["model"]["args"]["net"]["args"]
+    policy_kwargs["img_shape"] = [320, 180, 3]
     pi_head_kwargs = agent_parameters["model"]["args"]["pi_head_opts"]
     pi_head_kwargs["temperature"] = float(pi_head_kwargs["temperature"])
     return policy_kwargs, pi_head_kwargs
@@ -106,6 +107,8 @@ def behavioural_cloning_train(data_dir, in_model, in_weights, out_weights):
     bkup_out_path = tmp_path + "_bkup.weights"
     log_path = tmp_path + ".log"
 
+    nullevent = 0
+    
     loss_sum = 0
     for batch_i, (batch_images, batch_actions, batch_episode_id) in enumerate(data_loader):
         batch_loss = 0
@@ -120,8 +123,8 @@ def behavioural_cloning_train(data_dir, in_model, in_weights, out_weights):
             agent_action = agent._env_action_to_agent(action, to_torch=True, check_if_null=True)
             if agent_action is None:
                 # Action was null
-                continue
-
+                continue            
+                
             agent_obs = agent._env_obs_to_agent({"pov": image})
             if episode_id not in episode_hidden_states:
                 episode_hidden_states[episode_id] = policy.initial_state(1)

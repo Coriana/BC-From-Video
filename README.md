@@ -1,9 +1,10 @@
 # Behaviour cloning from video
 This code is a shameless hack from the might work at OpenAI and their Video PreTraining (VPT) project.
 
-Using their IDM agent this tool 'guesstimates' the keys/mouse motion in batches, then feeds to a behavior cloning system to try and replicate the style of play.
+To generate .jsonl files from video, place the IDM model and weights in the same folder as this readme.
 
-Currently it fails as I have yet to work out how to make the camera play nice.
+then run:
+python IDM_Video.py --video-path=video.mp4
 
 
 
