@@ -85,14 +85,13 @@ MINEREC_VERSION_SPECIFIC_SCALERS = {
 def json_action_to_env_action(json_action):
     """
     Converts a json action into a MineRL action.
-    Returns (minerl_action, is_null_action)
+    Returns (minerl_action)
     """
     # This might be slow...
     env_action = NOOP_ACTION.copy()
     # As a safeguard, make camera action again so we do not override anything
     env_action["camera"] = np.array([0, 0])
 
-    is_null_action = True
     keyboard_keys = json_action["keyboard"]["keys"]
     for key in keyboard_keys:
         # You can have keys that we do not use, so just skip them
@@ -101,30 +100,24 @@ def json_action_to_env_action(json_action):
         #      Not doing it here, as BASALT uses ESC to quit the game.
         if key in KEYBOARD_BUTTON_MAPPING:
             env_action[KEYBOARD_BUTTON_MAPPING[key]] = 1
-            is_null_action = False
 
     mouse = json_action["mouse"]
     camera_action = env_action["camera"]
     camera_action[0] = mouse["dy"] * CAMERA_SCALER
     camera_action[1] = mouse["dx"] * CAMERA_SCALER
 
-    if mouse["dx"] != 0 or mouse["dy"] != 0:
-        is_null_action = False
-    else:
-        if abs(camera_action[0]) > 180:
-            camera_action[0] = 0
-        if abs(camera_action[1]) > 180:
-            camera_action[1] = 0
+    if abs(camera_action[0]) > 180:
+        camera_action[0] = 0
+    if abs(camera_action[1]) > 180:
+        camera_action[1] = 0
 
     mouse_buttons = mouse["buttons"]
     if 0 in mouse_buttons:
         env_action["attack"] = 1
-        is_null_action = False
     if 1 in mouse_buttons:
         env_action["use"] = 1
-        is_null_action = False
 
-    return env_action, is_null_action
+    return env_action
 
 
 def composite_images_with_alpha(image1, image2, alpha, x, y):
@@ -189,7 +182,7 @@ def data_loader_worker(tasks_queue, output_queue, quit_workers_event):
             if attack_is_stuck:
                 step_data["mouse"]["buttons"] = [button for button in step_data["mouse"]["buttons"] if button != 0]
 
-            action, is_null_action = json_action_to_env_action(step_data)
+            action = json_action_to_env_action(step_data)
 
             # Update hotbar selection
             current_hotbar = step_data["hotbar"]
@@ -203,8 +196,6 @@ def data_loader_worker(tasks_queue, output_queue, quit_workers_event):
                 # Skip null actions as done in the VPT paper
                 # NOTE: in VPT paper, this was checked _after_ transforming into agent's action-space.
                 #       We do this here as well to reduce amount of data sent over.
-                if is_null_action:
-                    continue
                 if step_data["isGuiOpen"]:
                     camera_scaling_factor = frame.shape[0] / MINEREC_ORIGINAL_HEIGHT_PX
                     cursor_x = int(step_data["mouse"]["x"] * camera_scaling_factor)
